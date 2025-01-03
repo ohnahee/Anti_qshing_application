@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">안전한 QR 스캐너</string>
+    <string name="splash_description">큐싱(Qushing) 공격 탐지 기능 포함</string>
+    <string name="ic_qr_code_description">QR 코드 아이콘</string>
+    <string name="ic_shield_description">보안 아이콘</string>
+</resources>
