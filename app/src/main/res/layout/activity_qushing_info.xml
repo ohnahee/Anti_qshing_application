@@ -1,0 +1,28 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="큐싱(Qushing)이란?"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="큐싱(Qushing)은 QR 코드를 악용한 피싱 기법입니다. 악성 웹사이트로 유도하거나 개인정보를 탈취하는 등의 행위를 포함합니다."
+            android:textSize="16sp"
+            android:lineSpacingExtra="8dp" />
+
+    </LinearLayout>
+</ScrollView>
