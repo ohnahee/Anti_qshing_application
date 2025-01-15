@@ -34,11 +34,11 @@ class SplashActivity : AppCompatActivity() {
         }
         bounceAnimation.start()
 
-        // 3초 후 메인 액티비티로 이동
+        // 1.5초 후 메인 액티비티로 이동
         Handler(Looper.getMainLooper()).postDelayed({
             val intent = Intent(this@SplashActivity, MainActivity::class.java)
             startActivity(intent)
             finish()
-        }, 3000)
+        }, 1050)
     }
 }
