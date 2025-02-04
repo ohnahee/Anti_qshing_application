@@ -34,10 +34,16 @@
             android:exported="true" />
 
         <!-- QR 스캔용 커스텀 CaptureActivity -->
+
         <activity
             android:name="com.example.myapplication.CustomCaptureActivity"
             android:exported="true"
-            tools:node="replace" />
+            tools:node="replace"
+            android:screenOrientation="sensorPortrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+
+
 
         <!-- 큐싱 정보 페이지 -->
         <activity
@@ -46,4 +52,3 @@
 
     </application>
 </manifest>
-

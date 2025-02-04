@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
         // "큐싱(Qushing) 이란?" 카드 클릭 이벤트 처리
         val qushingInfoCard = findViewById<LinearLayout>(R.id.qushingInfoCard)
         qushingInfoCard.setOnClickListener {
-            // QushingInfoActivity로 이동
             val intent = Intent(this, QushingInfoActivity::class.java)
             startActivity(intent)
         }
@@ -54,26 +53,23 @@ class MainActivity : AppCompatActivity() {
     // QR 코드 스캔 초기화
     private fun initiateQrScan() {
         val integrator = IntentIntegrator(this)
-        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE) // QR 코드 형식만 허용
-        integrator.setPrompt("QR 코드를 스캔하세요") // 스캔 화면의 메시지
-        integrator.setCameraId(0) // 기본 카메라 사용
-        integrator.setBeepEnabled(true) // 스캔 시 소리
-        integrator.setOrientationLocked(true) // 화면 방향 고정
-        integrator.setBarcodeImageEnabled(true) // QR 코드 이미지 저장
-        qrScanLauncher.launch(integrator.createScanIntent())
+        integrator.setCaptureActivity(CustomCaptureActivity::class.java)
+        integrator.setOrientationLocked(true) // 화면 회전 잠금
+        integrator.setPrompt("QR 코드를 스캔하세요")
+        integrator.setBeepEnabled(true)
+        integrator.setBarcodeImageEnabled(true)
+        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+        integrator.initiateScan()
     }
 
     // QR 코드 스캔 결과 처리
     private fun handleQrScanResult(contents: String) {
         Toast.makeText(this, "QR 코드 내용: $contents", Toast.LENGTH_LONG).show()
-        // QR 코드 내용을 처리하는 로직 추가
         if (contents.contains("http")) {
-            // QR 코드 내용이 URL인 경우
             val intent = Intent(Intent.ACTION_VIEW)
             intent.data = android.net.Uri.parse(contents)
             startActivity(intent)
         } else {
-            // QR 코드 내용이 일반 텍스트인 경우
             Toast.makeText(this, "텍스트 QR 코드: $contents", Toast.LENGTH_LONG).show()
         }
     }
