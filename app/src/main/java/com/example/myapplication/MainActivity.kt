@@ -9,6 +9,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
     private lateinit var qrScanLauncher: ActivityResultLauncher<Intent>
@@ -16,20 +19,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ActionBar 숨기기
         supportActionBar?.hide()
-
-        // 메인 레이아웃 설정
         setContentView(R.layout.activity_main)
 
-        // QR 코드 스캔 영역 클릭 이벤트 처리
         val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton)
         qrScanButton.setOnClickListener {
             initiateQrScan()
         }
 
-
-        // QR 코드 스캔 결과 처리
         qrScanLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val intentResult: IntentResult? = IntentIntegrator.parseActivityResult(result.resultCode, result.data)
             if (intentResult != null) {
@@ -44,11 +41,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // QR 코드 스캔 초기화
     private fun initiateQrScan() {
         val integrator = IntentIntegrator(this)
         integrator.setCaptureActivity(CustomCaptureActivity::class.java)
-        integrator.setOrientationLocked(true) // 화면 회전 잠금
+        integrator.setOrientationLocked(true)
         integrator.setPrompt("QR 코드를 스캔하세요")
         integrator.setBeepEnabled(true)
         integrator.setBarcodeImageEnabled(true)
@@ -56,15 +52,41 @@ class MainActivity : AppCompatActivity() {
         integrator.initiateScan()
     }
 
-    // QR 코드 스캔 결과 처리
     private fun handleQrScanResult(contents: String) {
         Toast.makeText(this, "QR 코드 내용: $contents", Toast.LENGTH_LONG).show()
-        if (contents.contains("http")) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = android.net.Uri.parse(contents)
-            startActivity(intent)
-        } else {
-            Toast.makeText(this, "텍스트 QR 코드: $contents", Toast.LENGTH_LONG).show()
-        }
+        sendUrlToServer(contents)
+    }
+
+    private fun sendUrlToServer(url: String) {
+        val request = ScanRequest(url)
+
+        ApiClient.instance.sendScanRequest(request)
+            .enqueue(object : Callback<ScanResponse> {
+                override fun onResponse(call: Call<ScanResponse>, response: Response<ScanResponse>) {
+                    if (response.isSuccessful) {
+                        try {
+                            val result = response.body()?.result ?: "unknown"
+                            when (result) {
+                                "malicious" -> showToast("악성 URL입니다!")
+                                "safe" -> showToast("정상 URL입니다.")
+                                "not found url" -> showToast("데이터베이스에 없는 URL입니다.")
+                                else -> showToast("알 수 없는 결과: $result")
+                            }
+                        } catch (e: Exception) {
+                            showToast("데이터 처리 오류: ${e.message}")
+                        }
+                    } else {
+                        showToast("서버 오류 발생: ${response.code()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<ScanResponse>, t: Throwable) {
+                    showToast("서버 연결 실패: ${t.message}")
+                }
+            })
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 }
