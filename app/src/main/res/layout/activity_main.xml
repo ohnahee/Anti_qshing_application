@@ -102,37 +102,5 @@
                 android:layout_marginTop="16dp" />
         </LinearLayout>
 
-        <!-- 정보 카드 -->
-        <LinearLayout
-            android:id="@+id/qushingInfoCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:padding="16dp"
-            android:background="@drawable/rounded_background"
-            android:orientation="horizontal"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground">
-
-            <!-- 화살표 아이콘 -->
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_arrow_right"
-                app:tint="#757575"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="@string/ic_arrow_right_description" />
-
-            <!-- 텍스트 -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="큐싱(Qushing) 이란?"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
     </LinearLayout>
 </ScrollView>

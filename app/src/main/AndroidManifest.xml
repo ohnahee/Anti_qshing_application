@@ -43,12 +43,5 @@
             android:theme="@style/Theme.AppCompat.NoActionBar" />
 
 
-
-
-        <!-- 큐싱 정보 페이지 -->
-        <activity
-            android:name="com.example.myapplication.QushingInfoActivity"
-            android:exported="true" />
-
     </application>
 </manifest>

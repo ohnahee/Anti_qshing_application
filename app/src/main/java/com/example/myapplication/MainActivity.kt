@@ -28,12 +28,6 @@ class MainActivity : AppCompatActivity() {
             initiateQrScan()
         }
 
-        // "큐싱(Qushing) 이란?" 카드 클릭 이벤트 처리
-        val qushingInfoCard = findViewById<LinearLayout>(R.id.qushingInfoCard)
-        qushingInfoCard.setOnClickListener {
-            val intent = Intent(this, QushingInfoActivity::class.java)
-            startActivity(intent)
-        }
 
         // QR 코드 스캔 결과 처리
         qrScanLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
