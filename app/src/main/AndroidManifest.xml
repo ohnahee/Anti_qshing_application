@@ -33,6 +33,11 @@
             android:name="com.example.myapplication.MainActivity"
             android:exported="true" />
 
+        <!-- 앱 최초 실행시 큐싱 설명 -->
+        <activity android:name=".QushingIntroActivity" />
+        <activity android:name=".AdditionalInfoActivity" />
+
+
         <!-- QR 스캔용 커스텀 CaptureActivity -->
 
         <activity
