@@ -1,0 +1,47 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="@drawable/bg_gradient">
+
+    <!-- 제목 (큐싱 예방법) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/additional_info_title"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:paddingBottom="12dp" />
+
+    <!-- 설명 텍스트 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/qshing_description"
+        android:textSize="17sp"
+        android:textColor="#F2F2F2"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:lineSpacingExtra="8sp"
+        android:padding="0dp"
+        android:elevation="10dp"
+        android:layout_marginBottom="4dp" />
+
+    <!-- 버튼 (메인으로) -->
+    <Button
+        android:id="@+id/nextButton"
+        android:layout_width="200dp"
+        android:layout_height="60dp"
+        android:text="@string/button_main"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:elevation="6dp"
+        android:gravity="center"
+        android:layout_marginTop="12dp" />
+</LinearLayout>
