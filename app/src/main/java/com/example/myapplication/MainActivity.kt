@@ -1,70 +1,185 @@
 package com.example.myapplication
 
+import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.util.Log
+import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.google.zxing.integration.android.IntentIntegrator
-import com.google.zxing.integration.android.IntentResult
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.io.IOException
+import java.io.InputStream
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var qrScanLauncher: ActivityResultLauncher<Intent>
+    private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // ActionBar 숨기기
         supportActionBar?.hide()
-
-        // 메인 레이아웃 설정
         setContentView(R.layout.activity_main)
 
-        // QR 코드 스캔 영역 클릭 이벤트 처리
-        val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton)
+        val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton) // QR 스캔 버튼
+        val selectImageButton = findViewById<Button>(R.id.btn_select_qr_image)
+        val sendUrlButton = findViewById<Button>(R.id.btnSendUrl)
+        val urlInput = findViewById<EditText>(R.id.urlInput)
+
+        // 📌 QR 코드 스캔 버튼 클릭 시 `QRScannerActivity` 실행
         qrScanButton.setOnClickListener {
-            initiateQrScan()
+            val intent = Intent(this, QRScannerActivity::class.java)
+            startActivity(intent)
         }
 
-
-        // QR 코드 스캔 결과 처리
-        qrScanLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val intentResult: IntentResult? = IntentIntegrator.parseActivityResult(result.resultCode, result.data)
-            if (intentResult != null) {
-                if (intentResult.contents == null) {
-                    Toast.makeText(this, "QR 코드 스캔이 취소되었습니다.", Toast.LENGTH_SHORT).show()
-                } else {
-                    handleQrScanResult(intentResult.contents)
-                }
+        selectImageButton.setOnClickListener { pickQRCodeImage() }
+        sendUrlButton.setOnClickListener {
+            val url = urlInput.text.toString()
+            if (url.isNotEmpty()) {
+                sendUrlToServer(url)
             } else {
-                Toast.makeText(this, "QR 코드 스캔 실패", Toast.LENGTH_SHORT).show()
+                showAlertDialog("알림", "URL을 입력하세요.")
+            }
+        }
+
+        // 갤러리에서 QR 코드 이미지 선택 후 처리
+        imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK && result.data != null) {
+                result.data!!.data?.let { uri ->
+                    Log.d("ImageURI", "📌 선택한 이미지 URI: $uri")
+
+                    val inputStream: InputStream? = contentResolver.openInputStream(uri)
+                    val bitmap = BitmapFactory.decodeStream(inputStream)
+
+                    if (bitmap != null) {
+                        decodeQRCode(bitmap) { qrText ->
+                            if (!qrText.isNullOrEmpty()) {
+                                handleQrScanResult(qrText)
+                            } else {
+                                showAlertDialog("QR 코드 인식 실패", "QR 코드를 인식하지 못했습니다.")
+                            }
+                        }
+                    } else {
+                        showAlertDialog("오류", "이미지를 불러오지 못했습니다.")
+                    }
+                }
             }
         }
     }
 
-    // QR 코드 스캔 초기화
-    private fun initiateQrScan() {
-        val integrator = IntentIntegrator(this)
-        integrator.setCaptureActivity(CustomCaptureActivity::class.java)
-        integrator.setOrientationLocked(true) // 화면 회전 잠금
-        integrator.setPrompt("QR 코드를 스캔하세요")
-        integrator.setBeepEnabled(true)
-        integrator.setBarcodeImageEnabled(true)
-        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
-        integrator.initiateScan()
+    private fun pickQRCodeImage() {
+        val intent = Intent(Intent.ACTION_PICK)
+        intent.type = "image/*"
+        imagePickerLauncher.launch(intent)
     }
 
-    // QR 코드 스캔 결과 처리
+    private fun decodeQRCode(bitmap: android.graphics.Bitmap, onResult: (String?) -> Unit) {
+        val image = InputImage.fromBitmap(bitmap, 0)
+        val scanner: BarcodeScanner = BarcodeScanning.getClient()
+
+        scanner.process(image)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    val qrText = barcode.rawValue
+                    if (!qrText.isNullOrEmpty()) {
+                        Log.d("QRCode", "📌 QR 코드 해독 성공: $qrText")
+                        onResult(qrText)
+                        return@addOnSuccessListener
+                    }
+                }
+                Log.e("QRCode", "🚨 QR 코드 감지 실패")
+                onResult(null)
+            }
+            .addOnFailureListener { e ->
+                Log.e("QRCode", "🚨 QR 코드 해독 실패: ${e.message}")
+                onResult(null)
+            }
+    }
+
     private fun handleQrScanResult(contents: String) {
-        Toast.makeText(this, "QR 코드 내용: $contents", Toast.LENGTH_LONG).show()
         if (contents.contains("http")) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = android.net.Uri.parse(contents)
-            startActivity(intent)
+            showAlertDialog("QR 코드 내용", contents)
+            sendUrlToServer(contents)
         } else {
-            Toast.makeText(this, "텍스트 QR 코드: $contents", Toast.LENGTH_LONG).show()
+            showAlertDialog("QR 코드 오류", "QR 코드에서 URL을 감지하지 못했습니다.")
         }
+    }
+
+    private fun sendUrlToServer(url: String) {
+        val client = OkHttpClient()
+        val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+
+        val jsonObject = JSONObject()
+        jsonObject.put("url", url)
+
+        val requestBody = jsonObject.toString().toRequestBody(jsonMediaType)
+
+        val request = Request.Builder()
+            .url("http://hogbal.synology.me:13333/scan")
+            .post(requestBody)
+            .header("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread {
+                    showAlertDialog("서버 요청 실패", "서버 요청에 실패했습니다.\n오류: ${e.message}")
+                    Log.e("ServerRequest", "🚨 서버 요청 실패", e)
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.body?.let {
+                    val responseText = it.string()
+                    runOnUiThread {
+                        Log.d("ServerResponse", "✅ 서버 응답: $responseText")
+                        parseAndShowResult(responseText)
+                    }
+                }
+            }
+        })
+    }
+
+    // 서버 응답을 해석하고 다이얼로그로 표시하는 함수
+    private fun parseAndShowResult(responseText: String) {
+        try {
+            val jsonObject = JSONObject(responseText)
+            val result = jsonObject.getString("result")
+
+            val message = when (result) {
+                "malicious" -> "⚠️ 악성 URL입니다!"
+                "safe" -> "✅ 안전한 URL입니다!"
+                "not found url" -> "데이터베이스에 존재하지 않는 URL입니다."
+                else -> "알 수 없는 응답: $result"
+            }
+
+            showAlertDialog("스캔 결과", message)
+        } catch (e: Exception) {
+            showAlertDialog("오류", "서버 응답을 해석할 수 없습니다.\n오류: ${e.message}")
+            Log.e("ParseError", "🚨 JSON 파싱 오류", e)
+        }
+    }
+
+    // 중앙 팝업창(AlertDialog)을 표시하는 함수
+    private fun showAlertDialog(title: String, message: String) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("확인") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false) // 다이얼로그 외부 터치로 닫히지 않도록 설정
+
+        val dialog = builder.create()
+        dialog.show()
     }
 }

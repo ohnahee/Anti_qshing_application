@@ -22,7 +22,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/qshing_description"
+        android:text="@string/qshing_description2"
         android:textSize="17sp"
         android:textColor="#F2F2F2"
         android:gravity="center"

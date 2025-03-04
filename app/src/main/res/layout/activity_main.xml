@@ -21,7 +21,6 @@
             android:padding="16dp"
             android:gravity="center">
 
-            <!-- QR 아이콘과 텍스트 수평 배치 -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -38,13 +37,12 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="안전한 QR 스캐너"
+                    android:text="안전한 QR code 스캐너"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF" />
             </LinearLayout>
 
-            <!-- 하단 설명 배너 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -59,7 +57,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_shield_check"
-                    app:tint="#64DD17"
+                    app:tint="#388E3C"
                     android:contentDescription="@string/ic_shield_description"
                     android:layout_marginEnd="8dp" />
 
@@ -96,11 +94,37 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="QR 코드를 스캔하려면 클릭하세요"
+                android:text="QR code를 스캔하려면 클릭하세요"
                 android:textColor="#2563EB"
                 android:textSize="16sp"
                 android:layout_marginTop="16dp" />
         </LinearLayout>
+
+        <!-- QR 코드 이미지 선택 버튼 -->
+        <Button
+            android:id="@+id/btn_select_qr_image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="갤러리에서 가져오기" />
+
+        <!-- URL 입력 필드 -->
+        <EditText
+            android:id="@+id/urlInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:autofillHints="webUri"
+            android:hint="@string/enter_url"
+            android:gravity="center"
+            android:inputType="textUri" />
+
+        <!-- URL 서버 전송 버튼 -->
+        <Button
+            android:id="@+id/btnSendUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="URL 전송" />
+
 
     </LinearLayout>
 </ScrollView>

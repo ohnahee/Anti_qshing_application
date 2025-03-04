@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">hogbal.synology.me</domain> <!-- 서버 도메인 입력 -->
+    </domain-config>
+</network-security-config>
