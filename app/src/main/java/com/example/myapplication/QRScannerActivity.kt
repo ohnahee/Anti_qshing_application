@@ -1,6 +1,7 @@
 package com.example.myapplication
-
+import com.google.mlkit.vision.common.InputImage
 import android.Manifest
+import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -11,9 +12,11 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.mlkit.vision.barcode.BarcodeScanner
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.common.InputImage
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -21,7 +24,7 @@ import java.util.concurrent.Executors
 class QRScannerActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var previewView: PreviewView
-    private var isQrScanned = false // ✅ 한 번 QR 코드 스캔되면 true로 설정
+    private var isQrScanned = false // QR 코드 중복 스캔 방지
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,18 +49,16 @@ class QRScannerActivity : AppCompatActivity() {
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            // ✅ 카메라 프리뷰 설정
             val preview = Preview.Builder()
-                .setTargetResolution(android.util.Size(1280, 720)) // ✅ 해상도 향상
+                .setTargetResolution(android.util.Size(1280, 720))
                 .build()
                 .also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
-            // ✅ 이미지 분석기 설정
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setTargetResolution(android.util.Size(1280, 720)) // ✅ 분석 이미지 해상도 설정
+                .setTargetResolution(android.util.Size(1280, 720))
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor) { imageProxy ->
@@ -76,29 +77,23 @@ class QRScannerActivity : AppCompatActivity() {
     }
 
     private fun processImageProxy(imageProxy: ImageProxy) {
-        if (isQrScanned) { // 이미 QR 코드가 스캔되었으면 추가 분석 안함
+        if (isQrScanned) { // QR 코드 중복 스캔 방지
             imageProxy.close()
             return
         }
 
         val mediaImage = imageProxy.image ?: return
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        val scanner: BarcodeScanner = BarcodeScanning.getClient()
+        val scanner = com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
 
         scanner.process(image)
             .addOnSuccessListener { barcodes ->
-                if (barcodes.isEmpty()) {
-                    Log.d(TAG, "QR 코드 감지 실패")
-                } else {
-                    for (barcode in barcodes) {
-                        val qrText = barcode.rawValue
-                        if (!qrText.isNullOrEmpty()) {
-                            Toast.makeText(this, "QR 코드: $qrText", Toast.LENGTH_SHORT).show()
-                            Log.d(TAG, "QR 코드 인식 성공: $qrText")
-
-                            isQrScanned = true // 한 번 인식 되면 true로 설정
-                            finish() // 액티비티 종료하여 카메라 중지
-                        }
+                for (barcode in barcodes) {
+                    val qrText = barcode.rawValue
+                    if (!qrText.isNullOrEmpty()) {
+                        isQrScanned = true // QR 코드 중복 스캔 방지
+                        sendUrlToServer(qrText) // 📌 서버로 URL 전송
+                        break
                     }
                 }
             }
@@ -109,6 +104,73 @@ class QRScannerActivity : AppCompatActivity() {
             .addOnCompleteListener {
                 imageProxy.close()
             }
+    }
+
+    private fun sendUrlToServer(url: String) {
+        val client = OkHttpClient()
+        val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+
+        val jsonObject = JSONObject()
+        jsonObject.put("url", url)
+
+        val requestBody = jsonObject.toString().toRequestBody(jsonMediaType)
+
+        val request = Request.Builder()
+            .url("http://hogbal.synology.me:13333/scan")
+            .post(requestBody)
+            .header("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread {
+                    showAlertDialog("서버 요청 실패", "서버 요청에 실패했습니다.\n오류: ${e.message}")
+                    Log.e("ServerRequest", "🚨 서버 요청 실패", e)
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.body?.let {
+                    val responseText = it.string()
+                    runOnUiThread {
+                        Log.d("ServerResponse", "✅ 서버 응답: $responseText")
+                        parseAndShowResult(responseText)
+                    }
+                }
+            }
+        })
+    }
+
+    private fun parseAndShowResult(responseText: String) {
+        try {
+            val jsonObject = JSONObject(responseText)
+            val result = jsonObject.getString("result")
+
+            val message = when (result) {
+                "malicious" -> "⚠️ 악성 URL입니다!"
+                "safe" -> "✅ 안전한 URL입니다!"
+                "not found url" -> "데이터베이스에 존재하지 않는 URL입니다."
+                else -> "알 수 없는 응답: $result"
+            }
+
+            showAlertDialog("스캔 결과", message)
+        } catch (e: Exception) {
+            showAlertDialog("오류", "서버 응답을 해석할 수 없습니다.\n오류: ${e.message}")
+            Log.e("ParseError", "🚨 JSON 파싱 오류", e)
+        }
+    }
+
+    private fun showAlertDialog(title: String, message: String) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("확인") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+
+        val dialog = builder.create()
+        dialog.show()
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
