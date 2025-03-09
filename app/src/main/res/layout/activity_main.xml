@@ -105,26 +105,39 @@
             android:id="@+id/btn_select_qr_image"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="갤러리에서 가져오기" />
+            android:text="갤러리에서 가져오기"
+            android:backgroundTint="@color/blue_primary"
+            android:textColor="@color/white"
+            android:layout_marginTop="8dp"/>
 
-        <!-- URL 입력 필드 -->
-        <EditText
-            android:id="@+id/urlInput"
+        <!-- URL 입력 필드 & URL 전송 버튼 (가로 배치) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:autofillHints="webUri"
-            android:hint="@string/enter_url"
-            android:gravity="center"
-            android:inputType="textUri" />
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
 
-        <!-- URL 서버 전송 버튼 -->
-        <Button
-            android:id="@+id/btnSendUrl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="URL 전송" />
+            <EditText
+                android:id="@+id/urlInput"
+                android:layout_width="0dp"
+                android:layout_weight="3"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:autofillHints="webUri"
+                android:hint="@string/enter_url"
+                android:gravity="center"
+                android:inputType="textUri"/>
 
+            <Button
+                android:id="@+id/btnSendUrl"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="전송"
+                android:backgroundTint="@color/blue_primary"
+                android:textColor="@color/white"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
