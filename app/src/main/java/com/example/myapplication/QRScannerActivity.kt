@@ -1,5 +1,5 @@
 package com.example.myapplication
-import com.google.mlkit.vision.common.InputImage
+
 import android.Manifest
 import android.app.AlertDialog
 import android.content.pm.PackageManager
@@ -12,6 +12,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -77,29 +80,24 @@ class QRScannerActivity : AppCompatActivity() {
     }
 
     private fun processImageProxy(imageProxy: ImageProxy) {
-        if (isQrScanned) { // QR 코드 중복 스캔 방지
-            imageProxy.close()
-            return
-        }
-
         val mediaImage = imageProxy.image ?: return
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        val scanner = com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
+        val scanner: BarcodeScanner = BarcodeScanning.getClient()
 
         scanner.process(image)
             .addOnSuccessListener { barcodes ->
                 for (barcode in barcodes) {
                     val qrText = barcode.rawValue
                     if (!qrText.isNullOrEmpty()) {
-                        isQrScanned = true // QR 코드 중복 스캔 방지
-                        sendUrlToServer(qrText) // 📌 서버로 URL 전송
+                        Log.d(TAG, "QR 코드 인식 성공: $qrText")
+                        sendUrlToServer(qrText)
                         break
                     }
                 }
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "QR 코드 인식 실패", e)
-                Toast.makeText(this, "QR 코드 인식 실패", Toast.LENGTH_SHORT).show()
+                showAlertDialog("QR 코드 오류", "QR 코드 인식을 실패했습니다.")
             }
             .addOnCompleteListener {
                 imageProxy.close()
@@ -125,7 +123,7 @@ class QRScannerActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showAlertDialog("서버 요청 실패", "서버 요청에 실패했습니다.\n오류: ${e.message}")
-                    Log.e("ServerRequest", "🚨 서버 요청 실패", e)
+                    Log.e("ServerRequest", "서버 요청 실패", e)
                 }
             }
 
@@ -133,7 +131,7 @@ class QRScannerActivity : AppCompatActivity() {
                 response.body?.let {
                     val responseText = it.string()
                     runOnUiThread {
-                        Log.d("ServerResponse", "✅ 서버 응답: $responseText")
+                        Log.d("ServerResponse", "서버 응답: $responseText")
                         parseAndShowResult(responseText)
                     }
                 }
@@ -156,7 +154,7 @@ class QRScannerActivity : AppCompatActivity() {
             showAlertDialog("스캔 결과", message)
         } catch (e: Exception) {
             showAlertDialog("오류", "서버 응답을 해석할 수 없습니다.\n오류: ${e.message}")
-            Log.e("ParseError", "🚨 JSON 파싱 오류", e)
+            Log.e("ParseError", "JSON 파싱 오류", e)
         }
     }
 
@@ -166,6 +164,7 @@ class QRScannerActivity : AppCompatActivity() {
             .setMessage(message)
             .setPositiveButton("확인") { dialog, _ ->
                 dialog.dismiss()
+                restartCamera() // ✅ 다이얼로그 닫힌 후 카메라 다시 시작
             }
             .setCancelable(false)
 
@@ -173,8 +172,17 @@ class QRScannerActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    private fun restartCamera() {
+        isQrScanned = false
+    }
+
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
     }
 
     companion object {

@@ -8,7 +8,6 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -33,12 +32,11 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         setContentView(R.layout.activity_main)
 
-        val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton) // QR 스캔 버튼
+        val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton)
         val selectImageButton = findViewById<Button>(R.id.btn_select_qr_image)
         val sendUrlButton = findViewById<Button>(R.id.btnSendUrl)
         val urlInput = findViewById<EditText>(R.id.urlInput)
 
-        // 📌 QR 코드 스캔 버튼 클릭 시 `QRScannerActivity` 실행
         qrScanButton.setOnClickListener {
             val intent = Intent(this, QRScannerActivity::class.java)
             startActivity(intent)
@@ -54,11 +52,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 갤러리에서 QR 코드 이미지 선택 후 처리
         imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 result.data!!.data?.let { uri ->
-                    Log.d("ImageURI", "📌 선택한 이미지 URI: $uri")
+                    Log.d("ImageURI", "선택한 이미지 URI: $uri")
 
                     val inputStream: InputStream? = contentResolver.openInputStream(uri)
                     val bitmap = BitmapFactory.decodeStream(inputStream)
@@ -94,16 +91,16 @@ class MainActivity : AppCompatActivity() {
                 for (barcode in barcodes) {
                     val qrText = barcode.rawValue
                     if (!qrText.isNullOrEmpty()) {
-                        Log.d("QRCode", "📌 QR 코드 해독 성공: $qrText")
+                        Log.d("QRCode", "QR 코드 해독 성공: $qrText")
                         onResult(qrText)
                         return@addOnSuccessListener
                     }
                 }
-                Log.e("QRCode", "🚨 QR 코드 감지 실패")
+                Log.e("QRCode", "QR 코드 감지 실패")
                 onResult(null)
             }
             .addOnFailureListener { e ->
-                Log.e("QRCode", "🚨 QR 코드 해독 실패: ${e.message}")
+                Log.e("QRCode", "QR 코드 해독 실패: ${e.message}")
                 onResult(null)
             }
     }
@@ -136,7 +133,7 @@ class MainActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showAlertDialog("서버 요청 실패", "서버 요청에 실패했습니다.\n오류: ${e.message}")
-                    Log.e("ServerRequest", "🚨 서버 요청 실패", e)
+                    Log.e("ServerRequest", "서버 요청 실패", e)
                 }
             }
 
@@ -144,7 +141,7 @@ class MainActivity : AppCompatActivity() {
                 response.body?.let {
                     val responseText = it.string()
                     runOnUiThread {
-                        Log.d("ServerResponse", "✅ 서버 응답: $responseText")
+                        Log.d("ServerResponse", "서버 응답: $responseText")
                         parseAndShowResult(responseText)
                     }
                 }
@@ -152,10 +149,17 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    // 서버 응답을 해석하고 다이얼로그로 표시하는 함수
     private fun parseAndShowResult(responseText: String) {
         try {
+            Log.d("JSON_PARSING", "응답 JSON: $responseText")
+
             val jsonObject = JSONObject(responseText)
+
+            if (!jsonObject.has("result")) {
+                showAlertDialog("오류", "서버 응답이 올바르지 않습니다.")
+                return
+            }
+
             val result = jsonObject.getString("result")
 
             val message = when (result) {
@@ -168,11 +172,10 @@ class MainActivity : AppCompatActivity() {
             showAlertDialog("스캔 결과", message)
         } catch (e: Exception) {
             showAlertDialog("오류", "서버 응답을 해석할 수 없습니다.\n오류: ${e.message}")
-            Log.e("ParseError", "🚨 JSON 파싱 오류", e)
+            Log.e("ParseError", "JSON 파싱 오류", e)
         }
     }
 
-    // 중앙 팝업창(AlertDialog)을 표시하는 함수
     private fun showAlertDialog(title: String, message: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(title)
@@ -180,7 +183,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("확인") { dialog, _ ->
                 dialog.dismiss()
             }
-            .setCancelable(false) // 다이얼로그 외부 터치로 닫히지 않도록 설정
+            .setCancelable(false)
 
         val dialog = builder.create()
         dialog.show()
