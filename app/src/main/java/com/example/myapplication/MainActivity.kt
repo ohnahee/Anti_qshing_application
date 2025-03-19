@@ -3,11 +3,11 @@ package com.example.myapplication
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
+import android.view.Gravity
+import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -25,11 +25,13 @@ import java.io.InputStream
 
 class MainActivity : AppCompatActivity() {
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
+    private val client = OkHttpClient()
+    private val serverUrl = "https://86d4-14-56-209-110.ngrok-free.app/predict"
 
     @OptIn(ExperimentalGetImage::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar?.hide()
+        supportActionBar?.hide() // 액션 바 숨기기
         setContentView(R.layout.activity_main)
 
         val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton)
@@ -43,10 +45,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         selectImageButton.setOnClickListener { pickQRCodeImage() }
+
         sendUrlButton.setOnClickListener {
-            val url = urlInput.text.toString()
+            val url = urlInput.text.toString().trim()
             if (url.isNotEmpty()) {
-                sendUrlToServer(url)
+                sendUrlToServer(url) // 직접 입력한 URL 서버로 전송
             } else {
                 showAlertDialog("알림", "URL을 입력하세요.")
             }
@@ -63,7 +66,7 @@ class MainActivity : AppCompatActivity() {
                     if (bitmap != null) {
                         decodeQRCode(bitmap) { qrText ->
                             if (!qrText.isNullOrEmpty()) {
-                                handleQrScanResult(qrText)
+                                sendUrlToServer(qrText) // 판별 후에만 팝업 표시
                             } else {
                                 showAlertDialog("QR 코드 인식 실패", "QR 코드를 인식하지 못했습니다.")
                             }
@@ -105,26 +108,12 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    private fun handleQrScanResult(contents: String) {
-        if (contents.contains("http")) {
-            showAlertDialog("QR 코드 내용", contents)
-            sendUrlToServer(contents)
-        } else {
-            showAlertDialog("QR 코드 오류", "QR 코드에서 URL을 감지하지 못했습니다.")
-        }
-    }
-
     private fun sendUrlToServer(url: String) {
-        val client = OkHttpClient()
-        val jsonMediaType = "application/json; charset=utf-8".toMediaType()
-
-        val jsonObject = JSONObject()
-        jsonObject.put("url", url)
-
-        val requestBody = jsonObject.toString().toRequestBody(jsonMediaType)
+        val jsonObject = JSONObject().put("url", url)
+        val requestBody = jsonObject.toString().toRequestBody("application/json".toMediaType())
 
         val request = Request.Builder()
-            .url("http://hogbal.synology.me:13333/scan")
+            .url(serverUrl)
             .post(requestBody)
             .header("Content-Type", "application/json")
             .build()
@@ -133,16 +122,21 @@ class MainActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showAlertDialog("서버 요청 실패", "서버 요청에 실패했습니다.\n오류: ${e.message}")
-                    Log.e("ServerRequest", "서버 요청 실패", e)
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-                response.body?.let {
-                    val responseText = it.string()
+                response.use {
+                    if (!response.isSuccessful) {
+                        runOnUiThread {
+                            showAlertDialog("오류", "서버 응답 오류: ${response.code}")
+                        }
+                        return
+                    }
+
+                    val responseData = response.body?.string()
                     runOnUiThread {
-                        Log.d("ServerResponse", "서버 응답: $responseText")
-                        parseAndShowResult(responseText)
+                        parseAndShowResult(responseData ?: "{}") // 서버 판별 후에만 팝업 띄움
                     }
                 }
             }
@@ -151,46 +145,47 @@ class MainActivity : AppCompatActivity() {
 
     private fun parseAndShowResult(responseText: String) {
         try {
-            Log.d("JSON_PARSING", "응답 JSON: $responseText")
-
             val jsonObject = JSONObject(responseText)
+            val result = jsonObject.optString("Result", "결과 없음")
+            val safeProb = jsonObject.optJSONObject("Probabilities")?.optString("Safe", "0%") ?: "0%"
+            val maliciousProb = jsonObject.optJSONObject("Probabilities")?.optString("Malicious", "0%") ?: "0%"
 
-            if (!jsonObject.has("result")) {
-                showAlertDialog("오류", "서버 응답이 올바르지 않습니다.")
-                return
-            }
-
-            val result = jsonObject.getString("result")
-
-            // "not found url" 응답을 무시하고 사용자에게 알림을 띄우지 않음
-            if (result == "not found url") {
-                Log.d("ServerResponse", "URL 정보 없음. 사용자에게 알림 없음.")
-                return
-            }
-
-            val message = when (result) {
-                "malicious" -> "⚠️ 악성 URL입니다!"
-                "safe" -> "✅ 안전한 URL입니다!"
-                else -> "알 수 없는 응답: $result"
-            }
+            val message = "결과: $result\n안전 확률: $safeProb\n위험 확률: $maliciousProb"
 
             showAlertDialog("스캔 결과", message)
         } catch (e: Exception) {
             showAlertDialog("오류", "서버 응답을 해석할 수 없습니다.\n오류: ${e.message}")
-            Log.e("ParseError", "JSON 파싱 오류", e)
         }
     }
 
     private fun showAlertDialog(title: String, message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("확인") { dialog, _ ->
-                dialog.dismiss()
+        runOnUiThread {
+            val titleView = TextView(this).apply {
+                text = title
+                textSize = 20f
+                setTypeface(null, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(20, 20, 20, 20)
             }
-            .setCancelable(false)
 
-        val dialog = builder.create()
-        dialog.show()
+            val messageView = TextView(this).apply {
+                text = message
+                textSize = 18f
+                gravity = Gravity.CENTER
+                setPadding(40, 40, 40, 40)
+            }
+
+            val layout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                addView(titleView)
+                addView(messageView)
+            }
+
+            AlertDialog.Builder(this)
+                .setView(layout)
+                .setPositiveButton("확인", null)
+                .show()
+        }
     }
 }
