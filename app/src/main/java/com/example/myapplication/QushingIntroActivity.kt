@@ -13,7 +13,7 @@ class QushingIntroActivity : AppCompatActivity() {
         val startButton = findViewById<Button>(R.id.startButton)
         startButton.setOnClickListener {
             // 추가 설명 페이지로 이동
-            startActivity(Intent(this, AdditionalInfoActivity::class.java))
+            startActivity(Intent(this, QushingIntroActivity2::class.java))
             finish()
         }
     }
