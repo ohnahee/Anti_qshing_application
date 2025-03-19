@@ -64,7 +64,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="큐싱(Qushing) 예방 솔루션"
+                    android:text="큐싱(Qshing) 예방 솔루션"
                     android:textSize="16sp"
                     android:textColor="#E3F2FD" />
             </LinearLayout>
