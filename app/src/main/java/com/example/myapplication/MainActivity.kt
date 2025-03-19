@@ -162,10 +162,15 @@ class MainActivity : AppCompatActivity() {
 
             val result = jsonObject.getString("result")
 
+            // "not found url" 응답을 무시하고 사용자에게 알림을 띄우지 않음
+            if (result == "not found url") {
+                Log.d("ServerResponse", "URL 정보 없음. 사용자에게 알림 없음.")
+                return
+            }
+
             val message = when (result) {
                 "malicious" -> "⚠️ 악성 URL입니다!"
                 "safe" -> "✅ 안전한 URL입니다!"
-                "not found url" -> "데이터베이스에 존재하지 않는 URL입니다."
                 else -> "알 수 없는 응답: $result"
             }
 
