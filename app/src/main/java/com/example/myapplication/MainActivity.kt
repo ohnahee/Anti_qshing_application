@@ -37,38 +37,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // UI 요소 초기화
         val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton)
         val selectImageButton = findViewById<Button>(R.id.btn_select_qr_image)
         val sendUrlButton = findViewById<Button>(R.id.btnSendUrl)
         val urlInput = findViewById<EditText>(R.id.urlInput)
-
-        // "큐싱(Qshing)" 클릭 이벤트 추가
         val qshingSolutionText = findViewById<TextView>(R.id.qshingSolutionText)
-        val fullText = "큐싱(Qshing) 예방 솔루션"
-        val spannableString = SpannableString(fullText)
 
-        val qshingClickSpan = object : ClickableSpan() {
-            override fun onClick(widget: View) {
-                val intent = Intent(this@MainActivity, QshingIntroActivity::class.java)
-                startActivity(intent)
-            }
+        // 큐싱(Qshing) 클릭 이벤트 추가
+        setupQshingClickableText(qshingSolutionText)
 
-            override fun updateDrawState(ds: android.text.TextPaint) {
-                ds.isUnderlineText = false
-                ds.color = qshingSolutionText.currentTextColor
-            }
-        }
-
-        val startIndex = fullText.indexOf("큐싱(Qshing)")
-        val endIndex = startIndex + "큐싱(Qshing)".length
-        spannableString.setSpan(qshingClickSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-        qshingSolutionText.text = spannableString
-        qshingSolutionText.movementMethod = LinkMovementMethod.getInstance()
-
+        // 버튼 클릭 이벤트 설정
         qrScanButton.setOnClickListener {
-            val intent = Intent(this, QRScannerActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, QRScannerActivity::class.java))
         }
 
         selectImageButton.setOnClickListener { pickQRCodeImage() }
@@ -82,6 +63,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // 갤러리에서 이미지 선택 결과 처리
         imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 result.data!!.data?.let { uri ->
@@ -104,6 +86,34 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * "큐싱(Qshing)" 텍스트 클릭 시 설명 화면으로 이동하는 기능 추가
+     */
+    private fun setupQshingClickableText(qshingSolutionText: TextView) {
+        val fullText = "큐싱(Qshing) 예방 솔루션"
+        val spannableString = SpannableString(fullText)
+
+        val qshingClickSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                val intent = Intent(this@MainActivity, QshingIntroActivity::class.java)
+                intent.putExtra("fromMain", true) // 메인 화면에서 접근했음을 표시
+                startActivity(intent)
+            }
+
+            override fun updateDrawState(ds: android.text.TextPaint) {
+                ds.isUnderlineText = false
+                ds.color = qshingSolutionText.currentTextColor
+            }
+        }
+
+        val startIndex = fullText.indexOf("큐싱(Qshing)")
+        val endIndex = startIndex + "큐싱(Qshing)".length
+        spannableString.setSpan(qshingClickSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+        qshingSolutionText.text = spannableString
+        qshingSolutionText.movementMethod = LinkMovementMethod.getInstance()
     }
 
     private fun pickQRCodeImage() {
@@ -187,9 +197,7 @@ class MainActivity : AppCompatActivity() {
             AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("확인") { dialog, _ ->
-                    dialog.dismiss()
-                }
+                .setPositiveButton("확인") { dialog, _ -> dialog.dismiss() }
                 .show()
         }
     }
