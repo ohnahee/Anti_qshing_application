@@ -60,8 +60,8 @@
 
                     <ImageView
                         android:id="@+id/shieldIcon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="27dp"
+                        android:layout_height="27dp"
                         android:src="@drawable/ic_shield_check"
                         app:tint="#88F68E"
                         android:contentDescription="@string/ic_shield_description"
