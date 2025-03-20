@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:alpha="0.8"
+    android:visibility="gone">
+
+    <!-- 튜토리얼 컨테이너 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/tutorial_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="안전한 QR 코드 스캐너 사용법"
+            android:textSize="22sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingBottom="10dp" />
+
+        <TextView
+            android:id="@+id/tutorial_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1. QR 코드 스캔 버튼을 눌러 코드를 스캔하세요.\n2. 악성 여부를 확인하고 조심하세요.\n3. URL을 직접 입력하여 검사할 수도 있습니다."
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:paddingBottom="20dp" />
+
+        <Button
+            android:id="@+id/btnCloseTutorial"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="확인"
+            android:padding="10dp"
+            android:backgroundTint="@android:color/holo_blue_light"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+</FrameLayout>

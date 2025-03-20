@@ -53,8 +53,8 @@
             android:exported="true" />
 
         <!-- 앱 최초 실행 시 큐싱 설명 -->
-        <activity android:name=".QushingIntroActivity" />
-        <activity android:name=".QushingIntroActivity2" />
+        <activity android:name=".QshingIntroActivity" />
+        <activity android:name=".QshingIntroActivity2" />
 
         <!-- ML Kit을 사용한 QR 코드 스캔 액티비티 -->
         <activity

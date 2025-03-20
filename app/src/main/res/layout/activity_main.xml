@@ -1,143 +1,151 @@
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#F6F8FB"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <!-- 스크롤 가능한 메인 콘텐츠 -->
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:layout_height="match_parent"
+        android:background="#F6F8FB"
+        android:padding="16dp">
 
-        <!-- 안전한 QR코드 스캐너 상단 배너 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/rounded_background2"
             android:orientation="vertical"
-            android:padding="16dp"
             android:gravity="center">
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/ic_qr_code"
-                    android:layout_marginEnd="8dp"
-                    android:contentDescription="@string/ic_qr_code_description" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="안전한 QR code 스캐너"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF" />
-            </LinearLayout>
-
+            <!-- 안전한 QR코드 스캐너 상단 배너 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/rounded_transparent_background"
-                android:orientation="horizontal"
+                android:background="@drawable/rounded_background2"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_qr_code"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="@string/ic_qr_code_description" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="안전한 QR code 스캐너"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF" />
+                </LinearLayout>
+
+                <!-- 큐싱(Qshing) 예방 솔루션 (Qshing 부분 클릭 가능) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_transparent_background"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:layout_marginTop="16dp">
+
+                    <ImageView
+                        android:id="@+id/shieldIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_shield_check"
+                        app:tint="#88F68E"
+                        android:contentDescription="@string/ic_shield_description"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:id="@+id/qshingSolutionText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="큐싱(Qshing) 예방 솔루션"
+                        android:textSize="16sp"
+                        android:textColor="#E3F2FD"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- QR 코드 스캔 영역 -->
+            <LinearLayout
+                android:id="@+id/qrScanButton"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/rounded_background"
+                android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp"
-                android:layout_marginTop="16dp">
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
                 <ImageView
-                    android:id="@+id/shieldIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_shield_check"
-                    app:tint="#88F68E"
-                    android:contentDescription="@string/ic_shield_description"
-                    android:layout_marginEnd="8dp" />
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_qr_code"
+                    app:tint="#2563EB" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="큐싱(Qshing) 예방 솔루션"
+                    android:text="QR code를 스캔하려면 클릭하세요"
+                    android:textColor="#2563EB"
                     android:textSize="16sp"
-                    android:textColor="#E3F2FD" />
+                    android:layout_marginTop="16dp" />
             </LinearLayout>
-        </LinearLayout>
 
-        <!-- QR 코드 스캔 영역 -->
-        <LinearLayout
-            android:id="@+id/qrScanButton"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/rounded_background"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="16dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/ic_qr_code"
-                app:tint="#2563EB" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="QR code를 스캔하려면 클릭하세요"
-                android:textColor="#2563EB"
-                android:textSize="16sp"
-                android:layout_marginTop="16dp" />
-        </LinearLayout>
-
-        <!-- QR 코드 이미지 선택 버튼 -->
-        <Button
-            android:id="@+id/btn_select_qr_image"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="갤러리에서 가져오기"
-            android:backgroundTint="@color/blue_primary"
-            android:textColor="@color/white"
-            android:layout_marginTop="8dp"/>
-
-        <!-- URL 입력 필드 & URL 전송 버튼 (가로 배치) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp">
-
-            <EditText
-                android:id="@+id/urlInput"
-                android:layout_width="0dp"
-                android:layout_weight="3"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:autofillHints="webUri"
-                android:hint="@string/enter_url"
-                android:gravity="center"
-                android:inputType="textUri"/>
-
+            <!-- QR 코드 이미지 선택 버튼 -->
             <Button
-                android:id="@+id/btnSendUrl"
-                android:layout_width="0dp"
-                android:layout_weight="1"
+                android:id="@+id/btn_select_qr_image"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="전송"
+                android:text="갤러리에서 가져오기"
                 android:backgroundTint="@color/blue_primary"
                 android:textColor="@color/white"
-                android:layout_marginStart="8dp"/>
-        </LinearLayout>
+                android:layout_marginTop="8dp"/>
 
-    </LinearLayout>
-</ScrollView>
+            <!-- URL 입력 필드 & URL 전송 버튼 (가로 배치) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <EditText
+                    android:id="@+id/urlInput"
+                    android:layout_width="0dp"
+                    android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:autofillHints="webUri"
+                    android:hint="@string/enter_url"
+                    android:gravity="center"
+                    android:inputType="textUri"/>
+
+                <Button
+                    android:id="@+id/btnSendUrl"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="전송"
+                    android:backgroundTint="@color/blue_primary"
+                    android:textColor="@color/white"
+                    android:layout_marginStart="8dp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

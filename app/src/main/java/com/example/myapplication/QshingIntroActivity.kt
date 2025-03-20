@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 
-class QushingIntroActivity : AppCompatActivity() {
+class QshingIntroActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.qshing_info1)
@@ -13,7 +13,7 @@ class QushingIntroActivity : AppCompatActivity() {
         val startButton = findViewById<Button>(R.id.startButton)
         startButton.setOnClickListener {
             // 추가 설명 페이지로 이동
-            startActivity(Intent(this, QushingIntroActivity2::class.java))
+            startActivity(Intent(this, QshingIntroActivity2::class.java))
             finish()
         }
     }

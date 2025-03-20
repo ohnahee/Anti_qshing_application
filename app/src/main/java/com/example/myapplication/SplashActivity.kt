@@ -19,7 +19,7 @@ class SplashActivity : AppCompatActivity() {
         Handler(Looper.getMainLooper()).postDelayed({
             if (isFirstRun) {
                 // 최초 실행 시 큐싱 설명 페이지로 이동
-                startActivity(Intent(this, QushingIntroActivity::class.java))
+                startActivity(Intent(this, QshingIntroActivity::class.java))
                 sharedPref.edit().putBoolean("isFirstRun", false).apply()
             } else {
                 // 이후 실행 시 메인 페이지로 이동

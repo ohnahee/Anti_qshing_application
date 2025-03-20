@@ -1,12 +1,17 @@
 package com.example.myapplication
 
+import android.graphics.Typeface
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.graphics.Typeface
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.util.Log
 import android.view.Gravity
+import android.view.View
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,13 +36,38 @@ class MainActivity : AppCompatActivity() {
     @OptIn(ExperimentalGetImage::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar?.hide() // 액션 바 숨기기
         setContentView(R.layout.activity_main)
 
         val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton)
         val selectImageButton = findViewById<Button>(R.id.btn_select_qr_image)
         val sendUrlButton = findViewById<Button>(R.id.btnSendUrl)
         val urlInput = findViewById<EditText>(R.id.urlInput)
+
+        // "큐싱(Qshing) 예방 솔루션"에서 "큐싱(Qshing)" 부분 전체를 클릭 가능하도록 설정
+        val qshingSolutionText = findViewById<TextView>(R.id.qshingSolutionText)
+
+        val fullText = "큐싱(Qshing) 예방 솔루션"
+        val spannableString = SpannableString(fullText)
+
+        val qshingClickSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                val intent = Intent(this@MainActivity, QshingIntroActivity::class.java)
+                startActivity(intent)
+            }
+
+            override fun updateDrawState(ds: android.text.TextPaint) {
+                ds.isUnderlineText = false  // 밑줄 제거
+                ds.color = qshingSolutionText.currentTextColor  // 기존 색상 유지
+            }
+        }
+
+        // "큐싱(Qshing)" 부분만 클릭 가능하게 설정
+        val startIndex = fullText.indexOf("큐싱(Qshing)")
+        val endIndex = startIndex + "큐싱(Qshing)".length
+        spannableString.setSpan(qshingClickSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+        qshingSolutionText.text = spannableString
+        qshingSolutionText.movementMethod = LinkMovementMethod.getInstance() // 클릭 이벤트 활성화
 
         qrScanButton.setOnClickListener {
             val intent = Intent(this, QRScannerActivity::class.java)
@@ -49,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         sendUrlButton.setOnClickListener {
             val url = urlInput.text.toString().trim()
             if (url.isNotEmpty()) {
-                sendUrlToServer(url) // 직접 입력한 URL 서버로 전송
+                sendUrlToServer(url)
             } else {
                 showAlertDialog("알림", "URL을 입력하세요.")
             }
@@ -66,7 +96,7 @@ class MainActivity : AppCompatActivity() {
                     if (bitmap != null) {
                         decodeQRCode(bitmap) { qrText ->
                             if (!qrText.isNullOrEmpty()) {
-                                sendUrlToServer(qrText) // 판별 후에만 팝업 표시
+                                sendUrlToServer(qrText)
                             } else {
                                 showAlertDialog("QR 코드 인식 실패", "QR 코드를 인식하지 못했습니다.")
                             }
@@ -136,7 +166,7 @@ class MainActivity : AppCompatActivity() {
 
                     val responseData = response.body?.string()
                     runOnUiThread {
-                        parseAndShowResult(responseData ?: "{}") // 서버 판별 후에만 팝업 띄움
+                        parseAndShowResult(responseData ?: "{}")
                     }
                 }
             }
@@ -160,32 +190,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAlertDialog(title: String, message: String) {
         runOnUiThread {
-            val titleView = TextView(this).apply {
-                text = title
-                textSize = 20f
-                setTypeface(null, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(20, 20, 20, 20)
-            }
-
-            val messageView = TextView(this).apply {
-                text = message
-                textSize = 18f
-                gravity = Gravity.CENTER
-                setPadding(40, 40, 40, 40)
-            }
-
-            val layout = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                addView(titleView)
-                addView(messageView)
-            }
-
             AlertDialog.Builder(this)
-                .setView(layout)
-                .setPositiveButton("확인", null)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("확인") { dialog, _ ->
+                    dialog.dismiss()
+                }
                 .show()
         }
     }
 }
+
+
