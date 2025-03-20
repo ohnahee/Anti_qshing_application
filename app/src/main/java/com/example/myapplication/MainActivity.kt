@@ -1,8 +1,8 @@
 package com.example.myapplication
 
-import android.graphics.Typeface
 import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.text.SpannableString
@@ -10,7 +10,6 @@ import android.text.Spanned
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.util.Log
-import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
@@ -43,9 +42,8 @@ class MainActivity : AppCompatActivity() {
         val sendUrlButton = findViewById<Button>(R.id.btnSendUrl)
         val urlInput = findViewById<EditText>(R.id.urlInput)
 
-        // "큐싱(Qshing) 예방 솔루션"에서 "큐싱(Qshing)" 부분 전체를 클릭 가능하도록 설정
+        // "큐싱(Qshing)" 클릭 이벤트 추가
         val qshingSolutionText = findViewById<TextView>(R.id.qshingSolutionText)
-
         val fullText = "큐싱(Qshing) 예방 솔루션"
         val spannableString = SpannableString(fullText)
 
@@ -56,18 +54,17 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun updateDrawState(ds: android.text.TextPaint) {
-                ds.isUnderlineText = false  // 밑줄 제거
-                ds.color = qshingSolutionText.currentTextColor  // 기존 색상 유지
+                ds.isUnderlineText = false
+                ds.color = qshingSolutionText.currentTextColor
             }
         }
 
-        // "큐싱(Qshing)" 부분만 클릭 가능하게 설정
         val startIndex = fullText.indexOf("큐싱(Qshing)")
         val endIndex = startIndex + "큐싱(Qshing)".length
         spannableString.setSpan(qshingClickSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
         qshingSolutionText.text = spannableString
-        qshingSolutionText.movementMethod = LinkMovementMethod.getInstance() // 클릭 이벤트 활성화
+        qshingSolutionText.movementMethod = LinkMovementMethod.getInstance()
 
         qrScanButton.setOnClickListener {
             val intent = Intent(this, QRScannerActivity::class.java)
@@ -91,7 +88,7 @@ class MainActivity : AppCompatActivity() {
                     Log.d("ImageURI", "선택한 이미지 URI: $uri")
 
                     val inputStream: InputStream? = contentResolver.openInputStream(uri)
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                    val bitmap: Bitmap? = BitmapFactory.decodeStream(inputStream)
 
                     if (bitmap != null) {
                         decodeQRCode(bitmap) { qrText ->
@@ -115,7 +112,7 @@ class MainActivity : AppCompatActivity() {
         imagePickerLauncher.launch(intent)
     }
 
-    private fun decodeQRCode(bitmap: android.graphics.Bitmap, onResult: (String?) -> Unit) {
+    private fun decodeQRCode(bitmap: Bitmap, onResult: (String?) -> Unit) {
         val image = InputImage.fromBitmap(bitmap, 0)
         val scanner: BarcodeScanner = BarcodeScanning.getClient()
 
@@ -124,16 +121,13 @@ class MainActivity : AppCompatActivity() {
                 for (barcode in barcodes) {
                     val qrText = barcode.rawValue
                     if (!qrText.isNullOrEmpty()) {
-                        Log.d("QRCode", "QR 코드 해독 성공: $qrText")
                         onResult(qrText)
                         return@addOnSuccessListener
                     }
                 }
-                Log.e("QRCode", "QR 코드 감지 실패")
                 onResult(null)
             }
-            .addOnFailureListener { e ->
-                Log.e("QRCode", "QR 코드 해독 실패: ${e.message}")
+            .addOnFailureListener {
                 onResult(null)
             }
     }
@@ -200,5 +194,3 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-
-
