@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
 class QRScannerActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var previewView: PreviewView
-    private var isQrScanned = false // QR 코드 중복 스캔 방지
+    private var isQrScanned = false // QR 코드 중복 인식 방지
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,9 +86,15 @@ class QRScannerActivity : AppCompatActivity() {
 
         scanner.process(image)
             .addOnSuccessListener { barcodes ->
+                if (isQrScanned) {
+                    imageProxy.close()
+                    return@addOnSuccessListener
+                }
+
                 for (barcode in barcodes) {
                     val qrText = barcode.rawValue
                     if (!qrText.isNullOrEmpty()) {
+                        isQrScanned = true // ✅ 중복 방지 플래그 설정
                         Log.d(TAG, "QR 코드 인식 성공: $qrText")
                         sendUrlToServer(qrText)
                         break
@@ -147,7 +153,6 @@ class QRScannerActivity : AppCompatActivity() {
             val message = when (result) {
                 "malicious" -> "⚠️ 악성 URL입니다!"
                 "safe" -> "✅ 안전한 URL입니다!"
-                "not found url" -> "데이터베이스에 존재하지 않는 URL입니다."
                 else -> "알 수 없는 응답: $result"
             }
 
@@ -164,7 +169,7 @@ class QRScannerActivity : AppCompatActivity() {
             .setMessage(message)
             .setPositiveButton("확인") { dialog, _ ->
                 dialog.dismiss()
-                restartCamera() // ✅ 다이얼로그 닫힌 후 카메라 다시 시작
+                restartCamera() // 확인 후 재스캔 가능
             }
             .setCancelable(false)
 
@@ -173,7 +178,7 @@ class QRScannerActivity : AppCompatActivity() {
     }
 
     private fun restartCamera() {
-        isQrScanned = false
+        isQrScanned = false // 팝업 닫히면 다시 스캔 가능하게
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
