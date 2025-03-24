@@ -1,12 +1,20 @@
 package com.example.myapplication
 
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.text.Layout
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.AlignmentSpan
 import android.util.Log
 import android.widget.*
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -25,36 +33,32 @@ import java.io.InputStream
 class MainActivity : AppCompatActivity() {
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
     private val client = OkHttpClient()
-    private val serverUrl = "https://86d4-14-56-209-110.ngrok-free.app/predict"
+    private val serverUrl = "https://ce32-203-250-32-194.ngrok-free.app/predict"
 
     @OptIn(ExperimentalGetImage::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // UI 요소 초기화
         val qrScanButton = findViewById<LinearLayout>(R.id.qrScanButton)
         val selectImageButton = findViewById<Button>(R.id.btn_select_qr_image)
         val sendUrlButton = findViewById<Button>(R.id.btnSendUrl)
         val urlInput = findViewById<EditText>(R.id.urlInput)
         val qshingSolutionText = findViewById<TextView>(R.id.qshingSolutionText)
 
-        // ✅ 큐싱 예방 솔루션 버튼 클릭 시 튜토리얼이 아닌 큐싱 설명 화면으로 이동
         qshingSolutionText.setOnClickListener {
             val intent = Intent(this, QshingIntroActivity::class.java)
-            intent.putExtra("fromMain", true) // ✅ 앱 설명 화면을 건너뛰기 위한 플래그 추가
+            intent.putExtra("fromMain", true)
             startActivity(intent)
         }
 
-        // QR 스캔 버튼 클릭 이벤트
+        // ✅ 권한 체크 후 스캐너 실행
         qrScanButton.setOnClickListener {
-            startActivity(Intent(this, QRScannerActivity::class.java))
+            checkCameraPermissionAndStartScanner()
         }
 
-        // 갤러리에서 QR 코드 이미지 선택
         selectImageButton.setOnClickListener { pickQRCodeImage() }
 
-        // URL 입력 후 서버 전송
         sendUrlButton.setOnClickListener {
             val url = urlInput.text.toString().trim()
             if (url.isNotEmpty()) {
@@ -64,7 +68,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 갤러리에서 이미지 선택 결과 처리
         imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 result.data!!.data?.let { uri ->
@@ -86,6 +89,27 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    // ✅ 카메라 권한 확인 및 요청
+    private fun checkCameraPermissionAndStartScanner() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CAMERA), 1001)
+        } else {
+            startActivity(Intent(this, QRScannerActivity::class.java))
+        }
+    }
+
+    // ✅ 권한 요청 결과 처리
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1001 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startActivity(Intent(this, QRScannerActivity::class.java))
+        } else {
+            Toast.makeText(this, "카메라 권한이 필요합니다", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -154,10 +178,9 @@ class MainActivity : AppCompatActivity() {
         try {
             val jsonObject = JSONObject(responseText)
             val result = jsonObject.optString("Result", "결과 없음")
-            val safeProb = jsonObject.optJSONObject("Probabilities")?.optString("Safe", "0%") ?: "0%"
-            val maliciousProb = jsonObject.optJSONObject("Probabilities")?.optString("Malicious", "0%") ?: "0%"
 
-            val message = "결과: $result\n안전 확률: $safeProb\n위험 확률: $maliciousProb"
+            val isMalicious = result.equals("Malicious", ignoreCase = true)
+            val message = if (isMalicious) "⚠️ 악성 URL입니다" else "✅ 정상 URL입니다"
 
             showAlertDialog("스캔 결과", message)
         } catch (e: Exception) {
@@ -167,9 +190,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAlertDialog(title: String, message: String) {
         runOnUiThread {
+            val centeredTitle = SpannableString(title).apply {
+                setSpan(
+                    AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER),
+                    0, length,
+                    Spannable.SPAN_INCLUSIVE_INCLUSIVE
+                )
+            }
+
+            val centeredMessage = SpannableString(message).apply {
+                setSpan(
+                    AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER),
+                    0, length,
+                    Spannable.SPAN_INCLUSIVE_INCLUSIVE
+                )
+            }
+
             AlertDialog.Builder(this)
-                .setTitle(title)
-                .setMessage(message)
+                .setTitle(centeredTitle)
+                .setMessage(centeredMessage)
                 .setPositiveButton("확인") { dialog, _ -> dialog.dismiss() }
                 .show()
         }
