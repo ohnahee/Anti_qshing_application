@@ -5,12 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
 import android.util.Log
-import android.view.View
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,16 +39,22 @@ class MainActivity : AppCompatActivity() {
         val urlInput = findViewById<EditText>(R.id.urlInput)
         val qshingSolutionText = findViewById<TextView>(R.id.qshingSolutionText)
 
-        // 큐싱(Qshing) 클릭 이벤트 추가
-        setupQshingClickableText(qshingSolutionText)
+        // ✅ 큐싱 예방 솔루션 버튼 클릭 시 튜토리얼이 아닌 큐싱 설명 화면으로 이동
+        qshingSolutionText.setOnClickListener {
+            val intent = Intent(this, QshingIntroActivity::class.java)
+            intent.putExtra("fromMain", true) // ✅ 앱 설명 화면을 건너뛰기 위한 플래그 추가
+            startActivity(intent)
+        }
 
-        // 버튼 클릭 이벤트 설정
+        // QR 스캔 버튼 클릭 이벤트
         qrScanButton.setOnClickListener {
             startActivity(Intent(this, QRScannerActivity::class.java))
         }
 
+        // 갤러리에서 QR 코드 이미지 선택
         selectImageButton.setOnClickListener { pickQRCodeImage() }
 
+        // URL 입력 후 서버 전송
         sendUrlButton.setOnClickListener {
             val url = urlInput.text.toString().trim()
             if (url.isNotEmpty()) {
@@ -86,34 +87,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    /**
-     * "큐싱(Qshing)" 텍스트 클릭 시 설명 화면으로 이동하는 기능 추가
-     */
-    private fun setupQshingClickableText(qshingSolutionText: TextView) {
-        val fullText = "큐싱(Qshing) 예방 솔루션"
-        val spannableString = SpannableString(fullText)
-
-        val qshingClickSpan = object : ClickableSpan() {
-            override fun onClick(widget: View) {
-                val intent = Intent(this@MainActivity, QshingIntroActivity::class.java)
-                intent.putExtra("fromMain", true) // 메인 화면에서 접근했음을 표시
-                startActivity(intent)
-            }
-
-            override fun updateDrawState(ds: android.text.TextPaint) {
-                ds.isUnderlineText = false
-                ds.color = qshingSolutionText.currentTextColor
-            }
-        }
-
-        val startIndex = fullText.indexOf("큐싱(Qshing)")
-        val endIndex = startIndex + "큐싱(Qshing)".length
-        spannableString.setSpan(qshingClickSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-        qshingSolutionText.text = spannableString
-        qshingSolutionText.movementMethod = LinkMovementMethod.getInstance()
     }
 
     private fun pickQRCodeImage() {

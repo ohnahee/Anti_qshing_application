@@ -2,34 +2,54 @@ package com.example.myapplication
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import androidx.activity.OnBackPressedCallback
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 
 class TutorialActivity : AppCompatActivity() {
+
+    private lateinit var tutorialImage: ImageView
+    private lateinit var tutorialText: TextView
+
+    private val tutorialPages = listOf(
+        TutorialPage(R.drawable.main1, "큐싱(Qshing) 예방 솔루션 버튼을 클릭하면\n큐싱 설명과 앱 튜토리얼 화면을\n다시 볼 수 있습니다"),
+        TutorialPage(R.drawable.main2, "카메라로 QR code 스캔이 가능합니다"),
+        TutorialPage(R.drawable.main3, "갤러리에서 QR code 이미지를 선택하여\n검사할 수 있습니다"),
+        TutorialPage(R.drawable.main4, "URL을 입력하여 검사도 가능합니다")
+    )
+
+    private var currentIndex = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 다크 모드 강제 비활성화
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-
         setContentView(R.layout.activity_tutorial)
 
-        // "앱 시작하기" 버튼 클릭 시 MainActivity로 이동
-        val btnStartApp = findViewById<Button>(R.id.btnStartApp)
-        btnStartApp.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK // 액티비티 스택을 초기화하여 앱이 종료되지 않도록 함
-            startActivity(intent)
-            finish()
-        }
+        tutorialImage = findViewById(R.id.tutorialImage)
+        tutorialText = findViewById(R.id.tutorialText)
 
-        // 뒤로 가기 버튼 방지
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                // 뒤로 가기 방지 (아무 동작 없음)
+        showCurrentPage()
+
+        // 화면 클릭 시 다음 단계로 이동 또는 종료
+        tutorialImage.setOnClickListener {
+            currentIndex++
+            if (currentIndex < tutorialPages.size) {
+                showCurrentPage()
+            } else {
+                // 마지막 페이지 다음 클릭 → MainActivity 이동
+                getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("isFirstRun", false)
+                    .apply()
+
+                startActivity(Intent(this, MainActivity::class.java))
+                finish()
             }
-        })
+        }
+    }
+
+    private fun showCurrentPage() {
+        val page = tutorialPages[currentIndex]
+        tutorialImage.setImageResource(page.imageResId)
+        tutorialText.text = page.description
     }
 }

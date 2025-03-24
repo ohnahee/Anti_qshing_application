@@ -12,10 +12,7 @@ class QshingIntroActivity : AppCompatActivity() {
 
         val startButton = findViewById<Button>(R.id.startButton)
         startButton.setOnClickListener {
-            val fromMain = intent.getBooleanExtra("fromMain", false)
-
             val intent = Intent(this, QshingIntroActivity2::class.java)
-            intent.putExtra("fromMain", fromMain) // 다음 액티비티에도 전달
             startActivity(intent)
             finish()
         }
