@@ -3,9 +3,12 @@ package com.example.myapplication
 import android.Manifest
 import android.app.AlertDialog
 import android.content.pm.PackageManager
-import android.os.Bundle
+import android.os.*
+import android.text.Layout
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.AlignmentSpan
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -25,32 +28,53 @@ import java.util.concurrent.Executors
 
 @androidx.camera.core.ExperimentalGetImage
 class QRScannerActivity : AppCompatActivity() {
+
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var previewView: PreviewView
-    private var isQrScanned = false // QR 코드 중복 인식 방지
+    private var isQrScanned = false
+
+    private val client = OkHttpClient()
+    private val serverUrl = "https://5c5a-14-56-209-110.ngrok-free.app/predict"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_qrscanner)
 
         previewView = findViewById(R.id.viewFinder)
+        cameraExecutor = Executors.newSingleThreadExecutor()
 
         if (allPermissionsGranted()) {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+                this,
+                REQUIRED_PERMISSIONS,
+                REQUEST_CODE_PERMISSIONS
             )
         }
+    }
 
-        cameraExecutor = Executors.newSingleThreadExecutor()
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                startCamera()
+            } else {
+                showAlertDialog("권한 거부", "카메라 권한이 필요합니다.")
+            }
+        }
     }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            val cameraProvider = cameraProviderFuture.get()
 
             val preview = Preview.Builder()
                 .setTargetResolution(android.util.Size(1280, 720))
@@ -65,6 +89,11 @@ class QRScannerActivity : AppCompatActivity() {
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor) { imageProxy ->
+                        // ✅ 분석 중단 조건 추가
+                        if (isQrScanned) {
+                            imageProxy.close()
+                            return@setAnalyzer
+                        }
                         processImageProxy(imageProxy)
                     }
                 }
@@ -80,30 +109,25 @@ class QRScannerActivity : AppCompatActivity() {
     }
 
     private fun processImageProxy(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image ?: return
+        val mediaImage = imageProxy.image ?: return imageProxy.close()
+
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
         val scanner: BarcodeScanner = BarcodeScanning.getClient()
 
         scanner.process(image)
             .addOnSuccessListener { barcodes ->
-                if (isQrScanned) {
-                    imageProxy.close()
-                    return@addOnSuccessListener
-                }
-
                 for (barcode in barcodes) {
-                    val qrText = barcode.rawValue
+                    val qrText = barcode.rawValue?.trim()
                     if (!qrText.isNullOrEmpty()) {
-                        isQrScanned = true // ✅ 중복 방지 플래그 설정
+                        isQrScanned = true
                         Log.d(TAG, "QR 코드 인식 성공: $qrText")
                         sendUrlToServer(qrText)
                         break
                     }
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "QR 코드 인식 실패", e)
-                showAlertDialog("QR 코드 오류", "QR 코드 인식을 실패했습니다.")
+            .addOnFailureListener {
+                showAlertDialog("QR 코드 오류", "QR 코드를 인식하지 못했습니다.")
             }
             .addOnCompleteListener {
                 imageProxy.close()
@@ -111,16 +135,11 @@ class QRScannerActivity : AppCompatActivity() {
     }
 
     private fun sendUrlToServer(url: String) {
-        val client = OkHttpClient()
-        val jsonMediaType = "application/json; charset=utf-8".toMediaType()
-
-        val jsonObject = JSONObject()
-        jsonObject.put("url", url)
-
-        val requestBody = jsonObject.toString().toRequestBody(jsonMediaType)
+        val jsonObject = JSONObject().put("url", url)
+        val requestBody = jsonObject.toString().toRequestBody("application/json".toMediaType())
 
         val request = Request.Builder()
-            .url("http://hogbal.synology.me:13333/scan")
+            .url(serverUrl)
             .post(requestBody)
             .header("Content-Type", "application/json")
             .build()
@@ -129,16 +148,14 @@ class QRScannerActivity : AppCompatActivity() {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
                     showAlertDialog("서버 요청 실패", "서버 요청에 실패했습니다.\n오류: ${e.message}")
-                    Log.e("ServerRequest", "서버 요청 실패", e)
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-                response.body?.let {
-                    val responseText = it.string()
+                response.use {
+                    val responseText = response.body?.string()
                     runOnUiThread {
-                        Log.d("ServerResponse", "서버 응답: $responseText")
-                        parseAndShowResult(responseText)
+                        parseAndShowResult(responseText ?: "{}")
                     }
                 }
             }
@@ -148,37 +165,49 @@ class QRScannerActivity : AppCompatActivity() {
     private fun parseAndShowResult(responseText: String) {
         try {
             val jsonObject = JSONObject(responseText)
-            val result = jsonObject.getString("result")
+            val result = jsonObject.optString("Result", "결과 없음")
 
-            val message = when (result) {
-                "malicious" -> "⚠️ 악성 URL입니다!"
-                "safe" -> "✅ 안전한 URL입니다!"
-                else -> "알 수 없는 응답: $result"
-            }
+            val isMalicious = result.equals("Malicious", ignoreCase = true)
+            val message = if (isMalicious) "⚠️ 악성 URL입니다" else "✅ 정상 URL입니다"
 
             showAlertDialog("스캔 결과", message)
         } catch (e: Exception) {
             showAlertDialog("오류", "서버 응답을 해석할 수 없습니다.\n오류: ${e.message}")
-            Log.e("ParseError", "JSON 파싱 오류", e)
         }
     }
 
     private fun showAlertDialog(title: String, message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(title)
-            .setMessage(message)
+        val centeredTitle = SpannableString(title).apply {
+            setSpan(
+                AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER),
+                0, length,
+                Spannable.SPAN_INCLUSIVE_INCLUSIVE
+            )
+        }
+
+        val centeredMessage = SpannableString(message).apply {
+            setSpan(
+                AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER),
+                0, length,
+                Spannable.SPAN_INCLUSIVE_INCLUSIVE
+            )
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(centeredTitle)
+            .setMessage(centeredMessage)
             .setPositiveButton("확인") { dialog, _ ->
                 dialog.dismiss()
-                restartCamera() // 확인 후 재스캔 가능
+                restartCamera()
             }
             .setCancelable(false)
-
-        val dialog = builder.create()
-        dialog.show()
+            .show()
     }
 
     private fun restartCamera() {
-        isQrScanned = false // 팝업 닫히면 다시 스캔 가능하게
+        previewView.postDelayed({
+            isQrScanned = false
+        }, 300)
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {

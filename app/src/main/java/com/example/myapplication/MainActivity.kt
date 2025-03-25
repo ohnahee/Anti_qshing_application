@@ -1,5 +1,4 @@
 package com.example.myapplication
-
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -14,7 +13,6 @@ import android.text.SpannableString
 import android.text.style.AlignmentSpan
 import android.util.Log
 import android.widget.*
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -33,7 +31,7 @@ import java.io.InputStream
 class MainActivity : AppCompatActivity() {
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
     private val client = OkHttpClient()
-    private val serverUrl = "https://ce32-203-250-32-194.ngrok-free.app/predict"
+    private val serverUrl = "https://5c5a-14-56-209-110.ngrok-free.app/predict"
 
     @OptIn(ExperimentalGetImage::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,9 +50,8 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // ✅ 권한 체크 후 스캐너 실행
         qrScanButton.setOnClickListener {
-            checkCameraPermissionAndStartScanner()
+            startActivity(Intent(this, QRScannerActivity::class.java))
         }
 
         selectImageButton.setOnClickListener { pickQRCodeImage() }
@@ -89,27 +86,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        }
-    }
-
-    // ✅ 카메라 권한 확인 및 요청
-    private fun checkCameraPermissionAndStartScanner() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CAMERA), 1001)
-        } else {
-            startActivity(Intent(this, QRScannerActivity::class.java))
-        }
-    }
-
-    // ✅ 권한 요청 결과 처리
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startActivity(Intent(this, QRScannerActivity::class.java))
-        } else {
-            Toast.makeText(this, "카메라 권한이 필요합니다", Toast.LENGTH_SHORT).show()
         }
     }
 

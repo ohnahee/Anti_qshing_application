@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">안전한 QR code 스캐너</string>
-    <string name="splash_description">큐싱(Qshing) 예방 솔루션</string>
+    <string name="splash_description">Trust QR code Scanner</string>
     <string name="ic_qr_code_description">QR 코드 아이콘</string>
     <string name="ic_shield_description">보안 아이콘</string>
 
