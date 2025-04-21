@@ -31,7 +31,7 @@ import java.io.InputStream
 class MainActivity : AppCompatActivity() {
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
     private val client = OkHttpClient()
-    private val serverUrl = "https://5c5a-14-56-209-110.ngrok-free.app/predict"
+    private val serverUrl = "https://i-keeper.synology.me/predict"
 
     @OptIn(ExperimentalGetImage::class)
     override fun onCreate(savedInstanceState: Bundle?) {
