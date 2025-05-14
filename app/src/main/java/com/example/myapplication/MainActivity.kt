@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
             val result = jsonObject.optString("Result", "결과 없음")
 
             val isMalicious = result.equals("Malicious", ignoreCase = true)
-            val message = if (isMalicious) "⚠️ 악성 URL입니다" else "✅ 정상 URL입니다"
+            val message = if (isMalicious) "악성 URL입니다" else "정상 URL입니다"
 
             showAlertDialog("스캔 결과", message)
         } catch (e: Exception) {
