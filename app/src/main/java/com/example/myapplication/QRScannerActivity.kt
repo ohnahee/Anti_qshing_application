@@ -34,7 +34,7 @@ class QRScannerActivity : AppCompatActivity() {
     private var isQrScanned = false
 
     private val client = OkHttpClient()
-    private val serverUrl = "https://5c5a-14-56-209-110.ngrok-free.app/predict"
+    private val serverUrl = "https://i-keeper.synology.me/predict"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,7 +89,7 @@ class QRScannerActivity : AppCompatActivity() {
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor) { imageProxy ->
-                        // ✅ 분석 중단 조건 추가
+                        // 분석 중단 조건 추가
                         if (isQrScanned) {
                             imageProxy.close()
                             return@setAnalyzer
@@ -168,7 +168,7 @@ class QRScannerActivity : AppCompatActivity() {
             val result = jsonObject.optString("Result", "결과 없음")
 
             val isMalicious = result.equals("Malicious", ignoreCase = true)
-            val message = if (isMalicious) "⚠️ 악성 URL입니다" else "✅ 정상 URL입니다"
+            val message = if (isMalicious) "악성 URL입니다" else "정상 URL입니다"
 
             showAlertDialog("스캔 결과", message)
         } catch (e: Exception) {
