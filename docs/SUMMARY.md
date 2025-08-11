@@ -1,3 +1,3 @@
 # Table of contents
 
-* [TEST](README.md)
+* [들어가기 전](README.md)
